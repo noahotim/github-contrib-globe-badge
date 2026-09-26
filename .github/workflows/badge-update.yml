@@ -34,3 +34,4 @@ jobs:
           commit_message: "Update cobe profile badge data"
           file_pattern: 'badge.gif data.json commit-cache.json'
           branch: main
+# trigger reindex for noahotim fork
