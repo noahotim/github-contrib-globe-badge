@@ -1,7 +1,60 @@
 {
   "user": "noahotim",
-  "generatedAt": "2026-09-26T09:30:09.090Z",
-  "totalCommits": 0,
+  "generatedAt": "2026-11-04T08:22:33.228Z",
+  "totalCommits": 256,
   "totalPullRequests": 0,
-  "markers": []
+  "markers": [
+    {
+      "owner": "noahotim",
+      "commits": 256,
+      "pullRequests": 0,
+      "location": [
+        1.787906,
+        33.5007314
+      ],
+      "repositories": [
+        {
+          "name": "anti-phishing-platform",
+          "url": "https://github.com/noahotim/anti-phishing-platform"
+        },
+        {
+          "name": "content-growth-machine",
+          "url": "https://github.com/noahotim/content-growth-machine"
+        },
+        {
+          "name": "noahotim",
+          "url": "https://github.com/noahotim/noahotim"
+        },
+        {
+          "name": "otzu-tech-solutions",
+          "url": "https://github.com/noahotim/otzu-tech-solutions"
+        },
+        {
+          "name": "pdf-direct-editor",
+          "url": "https://github.com/noahotim/pdf-direct-editor"
+        },
+        {
+          "name": "portfolio",
+          "url": "https://github.com/noahotim/portfolio"
+        },
+        {
+          "name": "profile-views",
+          "url": "https://github.com/noahotim/profile-views"
+        },
+        {
+          "name": "sues",
+          "url": "https://github.com/noahotim/sues"
+        },
+        {
+          "name": "sues-deploy",
+          "url": "https://github.com/noahotim/sues-deploy"
+        },
+        {
+          "name": "university-faculty-data-scraper",
+          "url": "https://github.com/noahotim/university-faculty-data-scraper"
+        }
+      ],
+      "size": 0.085
+    }
+  ]
 }

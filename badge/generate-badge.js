@@ -1,8 +1,8 @@
 import fs from 'fs';
 import https from 'https';
-import { createCanvas } from 'canvas';
-import GIFEncoder from 'gif-encoder-2';
 import { execSync } from 'child_process';
+
+const DATA_ONLY = process.argv.includes('--data-only') || process.env.DATA_ONLY === '1';
 
 const SIZE = 520;
 const CX = SIZE / 2;
@@ -302,12 +302,13 @@ async function getContributions(user, commitCache) {
   let totalPullRequests = 0;
   const now = Date.now();
 
-  // `-user:${user}` excludes repos the user owns directly at the query
-  // level, since those are never counted as external contributions anyway
-  // — this cuts the result set (and thus the API calls needed) drastically
-  // and keeps it well under the search API's 1000-result cap in practice.
-  const baseQuery = `author:${user} is:public -user:${user}`;
+  // Count every public commit the user authored, in their own repos as well
+  // as external ones. The globe is a map of where the user's work lives, so
+  // excluding own repos would render it empty for anyone who mostly ships in
+  // their own projects.
+  const baseQuery = `author:${user} is:public`;
   const items = await fetchAllCommitItems(baseQuery, sinceDate, untilDate);
+  const self = user.toLowerCase();
   for (const item of items) {
     const fullName = item.repository?.full_name;
     const sha = item.sha;
@@ -315,36 +316,35 @@ async function getContributions(user, commitCache) {
     if (seenShas.has(sha)) continue;
     seenShas.add(sha);
 
-    const cached = commitCache[sha];
+    const repoOwner = fullName.split('/')[0].toLowerCase();
     let originRepo;
-    if (cached && now - cached.resolvedAt < ORIGIN_CACHE_TTL_MS) {
-      originRepo = cached.origin;
+    if (repoOwner === self) {
+      // Own repo: attribute to itself. Origin resolution would walk a fork
+      // back to its upstream and credit the upstream owner instead.
+      originRepo = fullName;
     } else {
-      originRepo = await resolveOriginRepo(fullName, sha);
-      commitCache[sha] = { origin: originRepo, resolvedAt: now };
+      const cached = commitCache[sha];
+      if (cached && now - cached.resolvedAt < ORIGIN_CACHE_TTL_MS) {
+        originRepo = cached.origin;
+      } else {
+        originRepo = await resolveOriginRepo(fullName, sha);
+        commitCache[sha] = { origin: originRepo, resolvedAt: now };
+      }
+      if (originRepo.split('/')[0].toLowerCase() === self) continue;
     }
 
     const owner = originRepo.split('/')[0];
-    if (owner === user) continue;
     if (!counts.has(owner)) counts.set(owner, { commits: 0, pullRequests: 0, repositories: new Set() });
     const ownerStats = counts.get(owner);
     ownerStats.commits += 1;
     ownerStats.repositories.add(originRepo);
     totalCommits += 1;
-    console.log(`Commit ${sha.slice(0, 8)} attributed to ${originRepo}`);
   }
 
-  // Find pull requests authored by the user that were merged into main
-  // in public repositories not owned by the user.
-  // base:main deliberately means the literal main branch, rather than
-  // whatever the repository's default branch happens to be.
-  const pullRequestQuery = `author:${user} is:public -user:${user} is:merged`;
+  // Find pull requests authored by the user that were merged, in any public
+  // repository (own or external).
+  const pullRequestQuery = `author:${user} is:public is:merged type:pr`;
   const pullRequests = await fetchAllPullRequestItems(pullRequestQuery, sinceDate, untilDate);
-    console.log("Pull Request Query:", pullRequestQuery);
-    console.log("Fetched PR items length:", (pullRequests || []).length);
-    if (pullRequests && pullRequests.length > 0) {
-        console.log("First PR:", JSON.stringify(pullRequests[0], null, 2));
-    }
   for (const pullRequest of pullRequests) {
     const repoUrl = pullRequest.repository_url;
     let fullName = null;
@@ -354,28 +354,30 @@ async function getContributions(user, commitCache) {
         fullName = parts.slice(4).join('/');
       }
     }
-    console.log("DEBUG: repoUrl=", repoUrl, "fullName=", fullName);
     const number = pullRequest.number;
     if (!fullName || !number) continue;
     const pullRequestId = `${fullName}#${number}`;
     if (seenPullRequests.has(pullRequestId)) continue;
     seenPullRequests.add(pullRequestId);
     const owner = fullName.split('/')[0];
-    if (owner.toLowerCase() === user.toLowerCase()) continue;
     if (!counts.has(owner)) counts.set(owner, { commits: 0, pullRequests: 0, repositories: new Set() });
     const ownerStats = counts.get(owner);
     ownerStats.pullRequests += 1;
     ownerStats.repositories.add(fullName);
     totalPullRequests += 1;
-    console.log(`PR #${number} merged into main in ${fullName}`);
   }
 
   return { counts, totalCommits, totalPullRequests };
 }
 
+// Fallback location for the profile owner when GitHub has no location set.
+const SELF_LOCATION = process.env.SELF_LOCATION || 'Soroti, Uganda';
+
 async function getOwnerLocation(owner) {
   const user = await fetchJSON(`https://api.github.com/users/${encodeURIComponent(owner)}`, githubHeaders());
-  return user.location || null;
+  if (user.location) return user.location;
+  if (owner.toLowerCase() === USER.toLowerCase()) return SELF_LOCATION;
+  return null;
 }
 
 async function geocode(location) {
@@ -596,7 +598,11 @@ async function main() {
       })),
     });
   }
-  const geojson = await fetchJSON(WORLD_GEOJSON_URL, { 'User-Agent': 'github-contrib-globe-badge/1.0' });
+  const peak = Math.max(1, ...markers.map((m) => m.commits + m.pullRequests));
+  for (const marker of markers) {
+    const share = (marker.commits + marker.pullRequests) / peak;
+    marker.size = Math.round((0.03 + share * 0.055) * 1000) / 1000;
+  }
   fs.writeFileSync('data.json', JSON.stringify({
     user: USER,
     generatedAt: new Date().toISOString(),
@@ -604,6 +610,16 @@ async function main() {
     totalPullRequests,
     markers,
   }, null, 2));
+  console.log(`data.json written – ${markers.length} markers, ${totalCommits} commits, ${totalPullRequests} merged PRs`);
+
+  if (DATA_ONLY) {
+    console.log('--data-only: skipping badge.gif render');
+    return;
+  }
+
+  const geojson = await fetchJSON(WORLD_GEOJSON_URL, { 'User-Agent': 'github-contrib-globe-badge/1.0' });
+  const { createCanvas } = await import('canvas');
+  const { default: GIFEncoder } = await import('gif-encoder-2');
 
   // Render animated GIF — globe rotates one full turn seamlessly.
   const landGrid = computeLandGrid(geojson);
