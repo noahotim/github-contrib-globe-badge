@@ -296,6 +296,7 @@ async function getContributions(user, commitCache) {
   const untilDate = new Date().toISOString().slice(0, 10);
 
   const counts = new Map();
+  const repoCommits = new Map();
   const seenShas = new Set();
   const seenPullRequests = new Set();
   let totalCommits = 0;
@@ -338,6 +339,7 @@ async function getContributions(user, commitCache) {
     const ownerStats = counts.get(owner);
     ownerStats.commits += 1;
     ownerStats.repositories.add(originRepo);
+    repoCommits.set(originRepo, (repoCommits.get(originRepo) || 0) + 1);
     totalCommits += 1;
   }
 
@@ -367,7 +369,7 @@ async function getContributions(user, commitCache) {
     totalPullRequests += 1;
   }
 
-  return { counts, totalCommits, totalPullRequests };
+  return { counts, repoCommits, totalCommits, totalPullRequests };
 }
 
 // Fallback location for the profile owner when GitHub has no location set.
@@ -573,7 +575,7 @@ function renderFrame(ctx, centerLonDeg, landGrid, markers, totalCommits, totalPu
 
 async function main() {
   const commitCache = loadCommitCache();
-  const { counts, totalCommits, totalPullRequests } = await getContributions(USER, commitCache);
+  const { counts, repoCommits, totalCommits, totalPullRequests } = await getContributions(USER, commitCache);
   // Persist right away so already-resolved commits are saved even if a
   // later step (geocoding, GIF rendering) fails on this run.
   fs.writeFileSync(COMMIT_CACHE_PATH, JSON.stringify(commitCache, null, 2));
@@ -592,10 +594,13 @@ async function main() {
       commits: stats.commits,
       pullRequests: stats.pullRequests,
       location,
-      repositories: [...stats.repositories].sort().map((fullName) => ({
-        name: fullName.split('/').slice(1).join('/'),
-        url: `https://github.com/${fullName}`,
-      })),
+      repositories: [...stats.repositories]
+        .map((fullName) => ({
+          name: fullName.split('/').slice(1).join('/'),
+          url: `https://github.com/${fullName}`,
+          commits: repoCommits.get(fullName) || 0,
+        }))
+        .sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name)),
     });
   }
   const peak = Math.max(1, ...markers.map((m) => m.commits + m.pullRequests));

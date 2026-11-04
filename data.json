@@ -1,12 +1,12 @@
 {
   "user": "noahotim",
-  "generatedAt": "2026-11-04T08:35:46.954Z",
-  "totalCommits": 256,
+  "generatedAt": "2026-11-04T13:29:45.841Z",
+  "totalCommits": 259,
   "totalPullRequests": 0,
   "markers": [
     {
       "owner": "noahotim",
-      "commits": 256,
+      "commits": 259,
       "pullRequests": 0,
       "location": [
         1.787906,
@@ -14,44 +14,59 @@
       ],
       "repositories": [
         {
+          "name": "sues-deploy",
+          "url": "https://github.com/noahotim/sues-deploy",
+          "commits": 80
+        },
+        {
           "name": "anti-phishing-platform",
-          "url": "https://github.com/noahotim/anti-phishing-platform"
+          "url": "https://github.com/noahotim/anti-phishing-platform",
+          "commits": 64
         },
         {
           "name": "content-growth-machine",
-          "url": "https://github.com/noahotim/content-growth-machine"
-        },
-        {
-          "name": "noahotim",
-          "url": "https://github.com/noahotim/noahotim"
-        },
-        {
-          "name": "otzu-tech-solutions",
-          "url": "https://github.com/noahotim/otzu-tech-solutions"
+          "url": "https://github.com/noahotim/content-growth-machine",
+          "commits": 47
         },
         {
           "name": "pdf-direct-editor",
-          "url": "https://github.com/noahotim/pdf-direct-editor"
-        },
-        {
-          "name": "portfolio",
-          "url": "https://github.com/noahotim/portfolio"
-        },
-        {
-          "name": "profile-views",
-          "url": "https://github.com/noahotim/profile-views"
-        },
-        {
-          "name": "sues",
-          "url": "https://github.com/noahotim/sues"
-        },
-        {
-          "name": "sues-deploy",
-          "url": "https://github.com/noahotim/sues-deploy"
+          "url": "https://github.com/noahotim/pdf-direct-editor",
+          "commits": 22
         },
         {
           "name": "university-faculty-data-scraper",
-          "url": "https://github.com/noahotim/university-faculty-data-scraper"
+          "url": "https://github.com/noahotim/university-faculty-data-scraper",
+          "commits": 15
+        },
+        {
+          "name": "otzu-tech-solutions",
+          "url": "https://github.com/noahotim/otzu-tech-solutions",
+          "commits": 8
+        },
+        {
+          "name": "portfolio",
+          "url": "https://github.com/noahotim/portfolio",
+          "commits": 6
+        },
+        {
+          "name": "profile-views",
+          "url": "https://github.com/noahotim/profile-views",
+          "commits": 6
+        },
+        {
+          "name": "noahotim",
+          "url": "https://github.com/noahotim/noahotim",
+          "commits": 4
+        },
+        {
+          "name": "sues",
+          "url": "https://github.com/noahotim/sues",
+          "commits": 4
+        },
+        {
+          "name": "github-contrib-globe-badge",
+          "url": "https://github.com/noahotim/github-contrib-globe-badge",
+          "commits": 3
         }
       ],
       "size": 0.085
