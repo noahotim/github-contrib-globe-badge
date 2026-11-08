@@ -27,40 +27,59 @@ function getRepositoryOwner() {
 
 const USER = getRepositoryOwner();
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 function fetchJSONOnce(url, headers = {}) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers }, (res) => {
+    const req = https.get(url, { headers }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           const error = new Error(`GET ${url} returned ${res.statusCode}`);
           error.status = res.statusCode;
+          // A 403 with these headers is a permission/quota answer, not a
+          // transient failure — retrying it only stalls the job.
+          error.rateLimited = res.headers['x-ratelimit-remaining'] === '0';
+          error.permissionDenied = Boolean(res.headers['x-accepted-github-permissions']);
           const retryAfter = res.headers['retry-after'];
           const resetHeader = res.headers['x-ratelimit-reset'];
           if (retryAfter) error.retryAfterMs = Number(retryAfter) * 1000;
-          else if (resetHeader) error.retryAfterMs = Math.max(0, Number(resetHeader) * 1000 - Date.now());
+          else if (resetHeader && error.rateLimited) {
+            error.retryAfterMs = Math.max(0, Number(resetHeader) * 1000 - Date.now());
+          }
           reject(error);
           return;
         }
         try { resolve(JSON.parse(data)); }
         catch (error) { reject(error); }
       });
-    }).on('error', reject);
+    });
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      const error = new Error(`GET ${url} timed out after ${REQUEST_TIMEOUT_MS}ms`);
+      error.code = 'ETIMEDOUT';
+      req.destroy(error);
+    });
+    req.on('error', reject);
   });
 }
 
 async function fetchJSON(url, headers = {}) {
   let lastError;
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
       return await fetchJSONOnce(url, headers);
     } catch (error) {
       lastError = error;
-      const isRateLimited = error.status === 403 || error.status === 429;
-      if (attempt < 4) {
+      if (error.permissionDenied) throw error;
+      const isRateLimited = error.status === 429 || (error.status === 403 && error.rateLimited);
+      const isPermissionError = error.status === 401 || error.status === 403 || error.status === 404;
+      const isTransient = !error.status || error.status >= 500 || error.code === 'ETIMEDOUT';
+      if (isPermissionError && !isRateLimited) throw error;
+      if (!isRateLimited && !isTransient) throw error;
+      if (attempt < 3) {
         const waitMs = isRateLimited && error.retryAfterMs
-          ? error.retryAfterMs + 500
+          ? Math.min(error.retryAfterMs + 500, 65_000)
           : 1000 * (attempt + 1);
         await new Promise((resolve) => setTimeout(resolve, waitMs));
       }
