@@ -28,6 +28,8 @@ jobs:
           GITHUB_ACTOR: ${{ github.repository_owner }}
           # Optional read-only token so the generator can see private repos.
           GITHUB_TOKEN: ${{ secrets.CONTRIB_READ_TOKEN || github.token }}
+          # Comma-separated allowlist: only these private repos appear publicly.
+          PRIVATE_REPOS: noahotim/Teso-farm-doctor
         run: node badge/generate-badge.js
       - name: Commit badge and analytics data
         uses: stefanzweifel/git-auto-commit-action@v7
