@@ -136,6 +136,12 @@ async function fetchAllPages(url, headers = {}) {
 // let the caller merge them into the same owner totals.
 async function getPrivateCommitItems(user, sinceDate, untilDate) {
   const headers = githubHeaders();
+  // Only named private repositories are exposed on the public globe.
+  const allowlist = (process.env.PRIVATE_REPOS || '')
+    .split(',')
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowlist.length) return [];
   const repos = await fetchAllPages(
     'https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&visibility=private&sort=updated',
     headers,
@@ -143,19 +149,24 @@ async function getPrivateCommitItems(user, sinceDate, untilDate) {
   const items = [];
   for (const repo of repos) {
     if (!repo?.private || !repo.full_name) continue;
+    if (!allowlist.includes(repo.full_name.toLowerCase())) continue;
     let commits;
     try {
       commits = await fetchAllPages(
-        `https://api.github.com/repos/${repo.full_name}/commits?author=${encodeURIComponent(user)}`
-          + `&since=${sinceDate}T00:00:00Z&until=${untilDate}T23:59:59Z`,
+        `https://api.github.com/repos/${repo.full_name}/commits`
+          + `?since=${sinceDate}T00:00:00Z&until=${untilDate}T23:59:59Z`,
         headers,
       );
     } catch (error) {
       console.warn(`Could not list commits for ${repo.full_name}: ${error.message}`);
       continue;
     }
+    const self = user.toLowerCase();
     for (const commit of commits) {
-      if (commit?.sha) items.push({ repository: { full_name: repo.full_name }, sha: commit.sha });
+      const login = commit?.author?.login?.toLowerCase();
+      const email = commit?.commit?.author?.email?.toLowerCase() || '';
+      if (!commit?.sha || (login !== self && !email.includes(self))) continue;
+      items.push({ repository: { full_name: repo.full_name }, sha: commit.sha });
     }
   }
   return items;
