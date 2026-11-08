@@ -1,12 +1,12 @@
 {
   "user": "noahotim",
-  "generatedAt": "2026-11-08T12:35:35.986Z",
-  "totalCommits": 255,
+  "generatedAt": "2026-11-08T13:01:15.126Z",
+  "totalCommits": 259,
   "totalPullRequests": 0,
   "markers": [
     {
       "owner": "noahotim",
-      "commits": 255,
+      "commits": 259,
       "pullRequests": 0,
       "location": [
         1.787906,
@@ -39,6 +39,11 @@
           "commits": 15
         },
         {
+          "name": "github-contrib-globe-badge",
+          "url": "https://github.com/noahotim/github-contrib-globe-badge",
+          "commits": 9
+        },
+        {
           "name": "otzu-tech-solutions",
           "url": "https://github.com/noahotim/otzu-tech-solutions",
           "commits": 8
@@ -47,11 +52,6 @@
           "name": "portfolio",
           "url": "https://github.com/noahotim/portfolio",
           "commits": 6
-        },
-        {
-          "name": "github-contrib-globe-badge",
-          "url": "https://github.com/noahotim/github-contrib-globe-badge",
-          "commits": 5
         },
         {
           "name": "noahotim",
