@@ -119,6 +119,48 @@ async function searchPullRequests(query) {
   );
 }
 
+async function fetchAllPages(url, headers = {}) {
+  const items = [];
+  for (let page = 1; page <= 10; page += 1) {
+    const separator = url.includes('?') ? '&' : '?';
+    const data = await fetchJSON(`${url}${separator}per_page=100&page=${page}`, headers);
+    if (!Array.isArray(data) || data.length === 0) break;
+    items.push(...data);
+    if (data.length < 100) break;
+  }
+  return items;
+}
+
+// Commit search is public-only, so private repositories never appear there.
+// When the token can read them, list their commits through the REST API and
+// let the caller merge them into the same owner totals.
+async function getPrivateCommitItems(user, sinceDate, untilDate) {
+  const headers = githubHeaders();
+  const repos = await fetchAllPages(
+    'https://api.github.com/user/repos?affiliation=owner,collaborator,organization_member&visibility=private&sort=updated',
+    headers,
+  );
+  const items = [];
+  for (const repo of repos) {
+    if (!repo?.private || !repo.full_name) continue;
+    let commits;
+    try {
+      commits = await fetchAllPages(
+        `https://api.github.com/repos/${repo.full_name}/commits?author=${encodeURIComponent(user)}`
+          + `&since=${sinceDate}T00:00:00Z&until=${untilDate}T23:59:59Z`,
+        headers,
+      );
+    } catch (error) {
+      console.warn(`Could not list commits for ${repo.full_name}: ${error.message}`);
+      continue;
+    }
+    for (const commit of commits) {
+      if (commit?.sha) items.push({ repository: { full_name: repo.full_name }, sha: commit.sha });
+    }
+  }
+  return items;
+}
+
 const COMMIT_CACHE_PATH = 'commit-cache.json';
 // A cached commit->origin mapping is trusted for this long before being
 // re-resolved, since a repository that is private today (and thus invisible
@@ -341,6 +383,27 @@ async function getContributions(user, commitCache) {
     ownerStats.repositories.add(originRepo);
     repoCommits.set(originRepo, (repoCommits.get(originRepo) || 0) + 1);
     totalCommits += 1;
+  }
+
+  // Private repositories are invisible to the public search above; include
+  // them when the token has access so the globe reflects all shipped work.
+  try {
+    const privateItems = await getPrivateCommitItems(user, sinceDate, untilDate);
+    for (const item of privateItems) {
+      const fullName = item.repository?.full_name;
+      const sha = item.sha;
+      if (!fullName || !sha || seenShas.has(sha)) continue;
+      seenShas.add(sha);
+      const owner = fullName.split('/')[0];
+      if (!counts.has(owner)) counts.set(owner, { commits: 0, pullRequests: 0, repositories: new Set() });
+      const ownerStats = counts.get(owner);
+      ownerStats.commits += 1;
+      ownerStats.repositories.add(fullName);
+      repoCommits.set(fullName, (repoCommits.get(fullName) || 0) + 1);
+      totalCommits += 1;
+    }
+  } catch (error) {
+    console.warn(`Could not include private repositories: ${error.message}`);
   }
 
   // Find pull requests authored by the user that were merged, in any public
