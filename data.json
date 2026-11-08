@@ -1,12 +1,12 @@
 {
   "user": "noahotim",
-  "generatedAt": "2026-11-08T12:20:04.622Z",
-  "totalCommits": 253,
+  "generatedAt": "2026-11-08T12:35:35.986Z",
+  "totalCommits": 255,
   "totalPullRequests": 0,
   "markers": [
     {
       "owner": "noahotim",
-      "commits": 253,
+      "commits": 255,
       "pullRequests": 0,
       "location": [
         1.787906,
@@ -49,6 +49,11 @@
           "commits": 6
         },
         {
+          "name": "github-contrib-globe-badge",
+          "url": "https://github.com/noahotim/github-contrib-globe-badge",
+          "commits": 5
+        },
+        {
           "name": "noahotim",
           "url": "https://github.com/noahotim/noahotim",
           "commits": 4
@@ -57,11 +62,6 @@
           "name": "sues",
           "url": "https://github.com/noahotim/sues",
           "commits": 4
-        },
-        {
-          "name": "github-contrib-globe-badge",
-          "url": "https://github.com/noahotim/github-contrib-globe-badge",
-          "commits": 3
         }
       ],
       "size": 0.085
