@@ -1,12 +1,12 @@
 {
   "user": "noahotim",
-  "generatedAt": "2026-11-04T13:29:45.841Z",
-  "totalCommits": 259,
+  "generatedAt": "2026-11-08T12:20:04.622Z",
+  "totalCommits": 253,
   "totalPullRequests": 0,
   "markers": [
     {
       "owner": "noahotim",
-      "commits": 259,
+      "commits": 253,
       "pullRequests": 0,
       "location": [
         1.787906,
@@ -46,11 +46,6 @@
         {
           "name": "portfolio",
           "url": "https://github.com/noahotim/portfolio",
-          "commits": 6
-        },
-        {
-          "name": "pgtht",
-          "url": "https://github.com/noahotim/pgtht",
           "commits": 6
         },
         {
